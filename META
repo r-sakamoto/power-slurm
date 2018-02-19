@@ -1,0 +1,11 @@
+  Api_age:       0
+  Api_current:   31
+  Api_revision:  0
+  Major:         17
+  Meta:          1
+  Micro:         9
+  Minor:         02
+  Name:          slurm
+  Release:       1
+  Release_tags:  dist
+  Version:       17.02.9
