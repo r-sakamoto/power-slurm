@@ -791,199 +791,10 @@ extern int slurm_get_node_power(char *host, uint16_t *socket_cnt, power_current_
 
 
 /*
- * slurm_get_node_power.c - issue RPC to get the power of node
+ * slurm_set_node_power.c - issue RPC to set the power cap of node
  * IN  host  - name of node to query, NULL if localhost
- * OUT energy - pointer of power_current_data_t structures 
- * 		on success or NULL other wise
- * RET 0 on success or a slurm error code
- * NOTE: free the response using xfree
- */
-extern int slurm_get_node_power2(char *host, uint16_t socket_cnt, power_capping_data_t *set_info)
-{
-	int rc;
-	int k; 
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
-	//acct_gather_energy_req_msg_t req;
-	//power_knob_get_info_req_msg_t req;
-	power_knob_set_req_msg_t req;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	char *this_addr;
-
-
-	req.cap_info = set_info;
-//	req.socket_cnt = socket_cnt;
-//	req.socket_cnt = 1;	
-	
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-
-	for(k=0;k<req.socket_cnt;k++){
-		debug("Cap inside node_info.c %d is %d", k, req.cap_info[k].cpu_cap_watts);
-	}
-	
-	debug("req.socket_cnt %d", req.socket_cnt);
-	if (host)
-		slurm_conf_get_addr(host, &req_msg.address);
-	else if (cluster_flags & CLUSTER_FLAG_MULTSD) {
-		if ((this_addr = getenv("SLURMD_NODENAME"))) {
-			slurm_conf_get_addr(this_addr, &req_msg.address);
-		} else {
-			this_addr = "localhost";
-			slurm_set_addr(&req_msg.address,
-				       (uint16_t)slurm_get_slurmd_port(),
-				       this_addr);
-		}
-	} else {
-		char this_host[256];
-		/*
-		 *  Set request message address to slurmd on localhost
-		 */
-		gethostname_short(this_host, sizeof(this_host));
-		this_addr = slurm_conf_get_nodeaddr(this_host);
-		if (this_addr == NULL)
-			this_addr = xstrdup("localhost");
-		slurm_set_addr(&req_msg.address,
-			       (uint16_t)slurm_get_slurmd_port(),
-			       this_addr);
-		xfree(this_addr);
-	}
-	req_msg.msg_type = REQUEST_POWER_KNOB_SET;
-//	req_msg.msg_type = REQUEST_POWER_KNOB_GET_INFO;
-	req_msg.data     = &req;
-    
-    debug3("CAO: do slurm_send_recv_node_msg. *host = '%s'", host);
-	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
-
-	
-	if (rc != 0 || !resp_msg.auth_cred) {
-		error("slurm_get_node_energy: %m");
-		if (resp_msg.auth_cred)
-			g_slurm_auth_destroy(resp_msg.auth_cred);
-		return SLURM_ERROR;
-	}
-	if (resp_msg.auth_cred)
-		g_slurm_auth_destroy(resp_msg.auth_cred);
-	switch (resp_msg.msg_type) {
-	case RESPONSE_POWER_KNOB_GET_INFO:
-		socket_cnt = ((power_knob_get_info_node_resp_msg_t *) 
-			resp_msg.data)->socket_cnt;
-//		set_info = ((power_knob_get_info_node_resp_msg_t *) 
-//			resp_msg.data)->power_info;
-		((power_knob_get_info_node_resp_msg_t *) resp_msg.data)->power_info = NULL;
-		slurm_free_power_knob_get_info_node_resp_msg(resp_msg.data);
-		break;
-	case RESPONSE_SLURM_RC:
-	        rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		if (rc)
-			slurm_seterrno_ret(rc);
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS;
-}
-
-
-/*
- * slurm_get_node_power.c - issue RPC to get the power of node
- * IN  host  - name of node to query, NULL if localhost
- * OUT energy - pointer of power_current_data_t structures 
- * 		on success or NULL other wise
- * RET 0 on success or a slurm error code
- * NOTE: free the response using xfree
- */
-extern int slurm_get_node_power3(char *host, int set_info)
-{
-	int rc;
-	int k; 
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
-	power_knob_cap_req_msg_t req;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	char *this_addr;
-	
-	int socket_cnt =2;
-
-	req.cap_info = set_info;
-	
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-
-	for(k=0;k<socket_cnt;k++){
-		debug("Cap inside node_info.c %d is %d", k, req.cap_info);
-	}
-	
-	if (host)
-		slurm_conf_get_addr(host, &req_msg.address);
-	else if (cluster_flags & CLUSTER_FLAG_MULTSD) {
-		if ((this_addr = getenv("SLURMD_NODENAME"))) {
-			slurm_conf_get_addr(this_addr, &req_msg.address);
-		} else {
-			this_addr = "localhost";
-			slurm_set_addr(&req_msg.address,
-				       (uint16_t)slurm_get_slurmd_port(),
-				       this_addr);
-		}
-	} else {
-		char this_host[256];
-		/*
-		 *  Set request message address to slurmd on localhost
-		 */
-		gethostname_short(this_host, sizeof(this_host));
-		this_addr = slurm_conf_get_nodeaddr(this_host);
-		if (this_addr == NULL)
-			this_addr = xstrdup("localhost");
-		slurm_set_addr(&req_msg.address,
-			       (uint16_t)slurm_get_slurmd_port(),
-			       this_addr);
-		xfree(this_addr);
-	}
-	req_msg.msg_type = REQUEST_POWER_CAP_SET;
-	req_msg.data     = &req;
-    
-    debug3("CAO: do slurm_send_recv_node_msg. *host = '%s'", host);
-	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
-
-	if (rc != 0 || !resp_msg.auth_cred) {
-		error("slurm_get_node_energy: %m");
-		if (resp_msg.auth_cred)
-			g_slurm_auth_destroy(resp_msg.auth_cred);
-		return SLURM_ERROR;
-	}
-	if (resp_msg.auth_cred)
-		g_slurm_auth_destroy(resp_msg.auth_cred);
-	switch (resp_msg.msg_type) {
-	case RESPONSE_POWER_KNOB_GET_INFO:
-		socket_cnt = ((power_knob_get_info_node_resp_msg_t *) 
-			resp_msg.data)->socket_cnt;
-//		set_info = ((power_knob_get_info_node_resp_msg_t *) 
-//			resp_msg.data)->power_info;
-		((power_knob_get_info_node_resp_msg_t *) resp_msg.data)->power_info = NULL;
-		slurm_free_power_knob_get_info_node_resp_msg(resp_msg.data);
-		break;
-	case RESPONSE_SLURM_RC:
-	        rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		if (rc)
-			slurm_seterrno_ret(rc);
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS;
-}
-
-
-/*
- * slurm_get_node_power.c - issue RPC to get the power of node
- * IN  host  - name of node to query, NULL if localhost
- * OUT energy - pointer of power_current_data_t structures 
+ * IN  power_cap - 2 values for two sockets 
+ * OUT none
  * 		on success or NULL other wise
  * RET 0 on success or a slurm error code
  * NOTE: free the response using xfree
@@ -991,7 +802,6 @@ extern int slurm_get_node_power3(char *host, int set_info)
 extern int slurm_set_node_power4(char *host, int set_info, int set_info2)
 {
 	int rc;
-	int k; 
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	power_knob_cap_req_msg_t req;
@@ -1006,10 +816,8 @@ extern int slurm_set_node_power4(char *host, int set_info, int set_info2)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
-	//for(k=0;k<socket_cnt;k++){
-		debug("Cap inside node_info.c 0 is %d", req.cap_info);
-		debug("Cap inside node_info.c 1 is %d", req.cap_info2);		
-	//}
+	debug("Cap inside node_info.c 0 is %d", req.cap_info);
+	debug("Cap inside node_info.c 1 is %d", req.cap_info2);		
 	
 	if (host)
 		slurm_conf_get_addr(host, &req_msg.address);
@@ -1072,104 +880,6 @@ extern int slurm_set_node_power4(char *host, int set_info, int set_info2)
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
-/*
- * slurm_set_node_power.c - issue RPC to set the power cap of node
- * IN  host  - name of node to query, NULL if localhost
- * OUT energy - pointer of power_current_data_t structures 
- * 		on success or NULL other wise
- * RET 0 on success or a slurm error code
- * NOTE: free the response using xfree
- */
-// Linh changed extern int slurm_set_node_power(char *host, uint16_t socket_cnt, power_capping_data_t *set_info)
-extern int slurm_set_node_power(char *host, uint16_t socket_cnt, power_capping_data_t *set_info)
-{
-
-	int rc;
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
-	//power_knob_get_info_req_msg_t req;
-	power_knob_set_req_msg_t req;
-
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	char *this_addr;
-
-	req.cap_info = set_info;
-	req.socket_cnt = socket_cnt;
-
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-	int k; 
-	
-	for(k=0;k<socket_cnt;k++){
-		debug("Cap inside node_info.c %d is %d", k, req.cap_info[k].cpu_cap_watts);
-	}
-	
-	if (host)
-		slurm_conf_get_addr(host, &req_msg.address);
-	else if (cluster_flags & CLUSTER_FLAG_MULTSD) {
-		if ((this_addr = getenv("SLURMD_NODENAME"))) {
-			slurm_conf_get_addr(this_addr, &req_msg.address);
-		} else {
-			this_addr = "localhost";
-			slurm_set_addr(&req_msg.address,
-				       (uint16_t)slurm_get_slurmd_port(),
-				       this_addr);
-		}
-	} else {
-		char this_host[256];
-		/*
-		 *  Set request message address to slurmd on localhost
-		 */
-		gethostname_short(this_host, sizeof(this_host));
-		this_addr = slurm_conf_get_nodeaddr(this_host);
-		if (this_addr == NULL)
-			this_addr = xstrdup("localhost");
-		slurm_set_addr(&req_msg.address,
-			       (uint16_t)slurm_get_slurmd_port(),
-			       this_addr);
-		xfree(this_addr);
-	}
-
-	req_msg.msg_type = REQUEST_POWER_KNOB_SET;
-//		req_msg.msg_type = REQUEST_POWER_KNOB_GET_INFO;
-	req_msg.data     = &req;
- 
-	debug3("  slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);");
-	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
-	debug3(" FINISH  slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);");
-	if (rc != 0 || !resp_msg.auth_cred) {
-		error("slurm_get_node_energy: %m");
-		if (resp_msg.auth_cred)
-			g_slurm_auth_destroy(resp_msg.auth_cred);
-		return SLURM_ERROR;
-	}
-	if (resp_msg.auth_cred)
-		g_slurm_auth_destroy(resp_msg.auth_cred);
-	switch (resp_msg.msg_type) {
-	case RESPONSE_POWER_KNOB_GET_INFO:
-		// TODO 
-		// add a function of updating node power value using below data
-		socket_cnt = ((power_knob_get_info_node_resp_msg_t *) 
-			resp_msg.data)->socket_cnt;
-		//*get_info = ((power_knob_get_info_node_resp_msg_t *) 
-		//	resp_msg.data)->power_info;
-		((power_knob_get_info_node_resp_msg_t *) resp_msg.data)->power_info = NULL;
-		slurm_free_power_knob_get_info_node_resp_msg(resp_msg.data);
-		break;
-	case RESPONSE_SLURM_RC:
-	        rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		if (rc)
-			slurm_seterrno_ret(rc);
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-	
-	return SLURM_PROTOCOL_SUCCESS;
-}
-
 
 /*
  * slurm_get_cache - issue RPC to get the cache of node

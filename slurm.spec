@@ -85,7 +85,7 @@ Summary: Slurm Workload Manager
 
 License: GPL
 Group: System Environment/Base
-Source: slurm-17.02.9_edit_v16.tar.bz2
+Source: slurm-17.02.9_edit_final.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: https://slurm.schedmd.com/
 
@@ -374,7 +374,7 @@ according to the Slurm
 #############################################################################
 
 %prep
-%setup -n slurm-17.02.9_edit_v16
+%setup -n slurm-17.02.9_edit_final
 
 %build
 %configure \

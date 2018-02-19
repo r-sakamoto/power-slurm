@@ -279,7 +279,7 @@ static void _update_energy_val (uint32_t reg, int cpu_socket, int num)
  */
 static void _set_pkg_power_limut (int cpu_socket, int pwLimit, int clamp)
 {
-	debug2("Set power limut");
+	debug2("Set power limit");
 	if (clamp < 0 || clamp > 1){
 		exit (0);
 	}
@@ -288,7 +288,7 @@ static void _set_pkg_power_limut (int cpu_socket, int pwLimit, int clamp)
 	debug2("Clamp is %d", clamp);
 	// read the MSR_PKG_POWER_LIMIT Register, , Intel 64 and IA-32 Architectures Software Developer's Manual, pp Vol. 3B 14-21
 	uint64_t pw_limit_reg = 0;
-	_rdmsr ("_set_pkg_power_limut", msr_socket_file_name[cpu_socket],
+	_rdmsr ("_set_pkg_power_limit", msr_socket_file_name[cpu_socket],
 			MSR_PKG_POWER_LIMIT, &pw_limit_reg);
 
 	// 64 bit = 16 f letters =	0xffffffffffffffff
@@ -989,36 +989,17 @@ extern int power_knob_p_set_data(power_knob_cap_req_msg_t *cap_msg)
 {
 	//define local val
 	int i;
-	//power_knob_set_req_msg_t;
 
 	debug3("       power_knob_p_set_data 2");
-		debug3("   before assign");
+	debug3("   before assign");
 //	debug3("              socket_cnt    [%d] ",cap_msg->socket_cnt);
 	debug3("              pkg cap 1 val [%d]", cap_msg->cap_info);
 	debug3("              pkg cap 2 val [%d]", cap_msg->cap_info2);
 	debug3("   before limit");
-	//debug3("       power_knob_p_set_data");
-
-	//check cap_data
 		
-
-	//for pkg
-		//update capping value based on eneable_cap_mode;
-		// _set_pkg_power_limut
-		// _set_cpufreq
-		//
-		
-		//_set_pkg_power_limut (int cpu_socket, double pwLimit, int clamp)
-		
-//	_set_pkg_power_limut (cap_msg->socket_cnt, cap_msg->cap_info[cap_msg->socket_cnt].cpu_cap_watts, 1);
-	
+	//_set_pkg_power_limut (int cpu_socket, double pwLimit, int clamp)			
 	_set_pkg_power_limut (0, cap_msg->cap_info, 1);
 	_set_pkg_power_limut (1, cap_msg->cap_info2, 1);
-	//for (i = 0; i < nb_pkg; i++){	
-	//	local_power_set = set_pkg_power_limut (,);
-	
-	
-	//}
 	
 	return SLURM_SUCCESS;
 }

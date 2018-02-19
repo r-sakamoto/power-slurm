@@ -179,10 +179,12 @@ int power_allocator_p_do_power_safe(){
 	if (sum1 >slurmctld_conf.power_alert){
 		percentage_dif = ((float)sum1 /slurmctld_conf.power_alert)	*100;
 		printf ("Alert, power is %f%% of power budget \n", percentage_dif);
-		}
-	percentage_dif = ((float)sum1 /slurmctld_conf.power_alert)	*100;
-	
-	printf ("NO Alert, power is %f%% of power budget \n", percentage_dif);	
+	}
+	 
+	else {		
+		percentage_dif = ((float)sum1 /slurmctld_conf.power_alert)	*100;
+		printf ("NO Alert, power is %f%% of power budget \n", percentage_dif);	
+	}
 	return SLURM_SUCCESS;
 }
 

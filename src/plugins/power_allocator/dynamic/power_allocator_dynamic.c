@@ -301,7 +301,7 @@ static void node_power_schedule(void)
 		cap_values[1] = (int) perf_function;
 	
 		slurm_set_power_cap2(cap_values, node_name,number_of_node);
-
+		debug ("Finish node_power_schedule" );
 	}
 	
     list_iterator_destroy(job_iterator);	
@@ -375,11 +375,11 @@ int power_allocator_p_do_power_safe(){
 	if (sum1 >slurmctld_conf.power_alert){
 		percentage_dif = ((float)sum1 /slurmctld_conf.power_alert)	*100;
 		printf ("Alert, power is %f%% of power budget \n", percentage_dif);
-		}
-	percentage_dif = ((float)sum1 /slurmctld_conf.power_alert)	*100;
-	
-	printf ("NO Alert, power is %f%% of power budget \n", percentage_dif);
-	
+	}
+	else {	
+		percentage_dif = ((float)sum1 /slurmctld_conf.power_alert)	*100;
+		printf ("NO Alert, power is %f%% of power budget \n", percentage_dif);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -553,11 +553,14 @@ static void slurm_set_power_cap2(int *power_cap_value[], char *node_name[], int 
 						debug("_get_node_power_task: can't get info from slurmd(NODE : %s)", node_ptr->name);							
 						debug("After assign of set power");
 				 }
+				debug("Outside if");		 
 			}
 			
 			debug("Socket is %d", socket_cnt);						
 			lock_slurmctld(node_write_lock);	
-			memcpy(node_ptr->power_info->power_cap, powers_cap, sizeof(power_capping_data_t) * socket_cnt);			
+			debug("before memcpy");
+			//memcpy(node_ptr->power_info->power_cap, powers_cap, sizeof(power_capping_data_t) * socket_cnt);			
+			debug("after memcpy");
 			unlock_slurmctld(node_write_lock);
 
 			xfree(powers);

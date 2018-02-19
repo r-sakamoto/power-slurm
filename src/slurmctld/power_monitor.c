@@ -69,8 +69,6 @@ static void *_init_power_monitor(void *arg);
 
 static void slurm_get_power_consumption(double **power_consumption_value, char *node_name[], int number_of_node);
 static void slurm_get_power_cap(double **power_cap_value, char *node_name[], int number_of_node);
-static void slurm_set_power_cap(int **power_cap_value, char *node_name[], int number_of_node);
-
 static void slurm_set_power_cap2(int *power_cap_value[], char *node_name[], int number_of_node)
 {
 	debug(" LINH: SET POWER CAP");
@@ -109,10 +107,10 @@ static void slurm_set_power_cap2(int *power_cap_value[], char *node_name[], int 
 					debug("Inside compare set power)");
 				    debug("Before assign set power");
 					
-					powers_cap[0].cpu_cap_watts = (uint32_t)power_cap_value[j][0];
-					powers_cap[1].cpu_cap_watts = (uint32_t)power_cap_value[j][1];
+					//powers_cap[0].cpu_cap_watts = (uint32_t)power_cap_value[j][0];
+					//powers_cap[1].cpu_cap_watts = (uint32_t)power_cap_value[j][1];
 					
-					debug("Before assign of set power");			
+					//debug("Before assign of set power");			
 					debug(" LINH: Before Set power cap node PTR %s", node_ptr->name);	
 						
 					if (slurm_set_node_power4(node_ptr->name, power_cap_value[0], power_cap_value[1] )) 
@@ -125,7 +123,7 @@ static void slurm_set_power_cap2(int *power_cap_value[], char *node_name[], int 
 			debug("Socket is %d", socket_cnt);
 						
 			lock_slurmctld(node_write_lock);	
-			memcpy(node_ptr->power_info->power_cap, powers_cap, sizeof(power_capping_data_t) * socket_cnt);			
+			//memcpy(node_ptr->power_info->power_cap, powers_cap, sizeof(power_capping_data_t) * socket_cnt);			
 			unlock_slurmctld(node_write_lock);
 
 			xfree(powers);
@@ -136,81 +134,7 @@ static void slurm_set_power_cap2(int *power_cap_value[], char *node_name[], int 
 	}
 }
 
-static void slurm_set_power_cap(int **power_cap_value, char *node_name[], int number_of_node)
-{
-	debug(" LINH: SET POWER CAP");
 
-	power_current_data_t *powers;
-	power_capping_data_t *powers_cap;
-	powers_cap = (power_capping_data_t*)malloc(sizeof(power_capping_data_t));
-
-	uint16_t  socket_cnt;
-	int i,j,k;
-	struct node_record *node_ptr;
-
-    /* Locks: Read nodes */
-    slurmctld_lock_t node_read_lock = {
-        NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-    /* Locks: Write nodes */
-    slurmctld_lock_t node_write_lock = {
-        NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };	
-					
-	debug(" LINH: node_record_count: %d", node_record_count);		
-	
-	for(i=0, node_ptr = node_record_table_ptr;
-	    i<node_record_count; i++, node_ptr++){
-		debug3(" PMON node name : %s",node_ptr->name);
-		if (slurm_get_node_power(node_ptr->name, &socket_cnt, &powers)) {
-			debug("_get_node_power_task: can't get info from slurmd(NODE : %s)", node_ptr->name);
-		}else{		
-			//Check  whether node is called
-			debug3(" Get socket_cnt : %d",socket_cnt);
-			 for (j=0; j < number_of_node; j++) {
-				 debug(" LINH: ___Set power cap node PTR %s", node_ptr->name);
-				 debug(" LINH:  Set power cap node_name %s", node_name[j]);
-				 if (strcmp(node_name[j], node_ptr->name) == 0){
-					 debug("Inside compare set power)");
-					for(k=0;k<socket_cnt;k++){
-						debug("Before assign set power");
-						int test;
-						test = (uint32_t)power_cap_value[j][k];
-											
-						debug("power_cap_value [%d][%d] is %f", j,k,power_cap_value[j][k]);
-						debug("test is %d", test);
-							
-						debug("test is %d", powers[k].cpu_current_cap_watts);
-						powers_cap[k].cpu_cap_watts = (uint32_t)power_cap_value[j][k];
-						debug("After assign of set power");
-					} 
-				}
-			}
-			 
-			node_ptr->power_info->socket_cnt = socket_cnt; 
-						
-			debug(" LINH: Before Set power cap node PTR %s", node_ptr->name);
-			
-			for(k=0;k<socket_cnt;k++){
-				debug("Cap %d is %d", k, powers_cap[k].cpu_cap_watts);
-			}
-			
-			debug("Socket is %d", socket_cnt);
-	
-			if (slurm_get_node_power3(node_ptr->name, powers_cap[1].cpu_cap_watts)) 
-							
-			debug("_get_node_power_task: can't get info from slurmd(NODE : %s)", node_ptr->name);						
-			debug("After assign all");
-
-			lock_slurmctld(node_write_lock);	
-			memcpy(node_ptr->power_info->power_cap, powers_cap, sizeof(power_capping_data_t) * socket_cnt);			
-			unlock_slurmctld(node_write_lock);
-
-			xfree(powers);
-			free(powers_cap);
-			powers = NULL;	
-			powers_cap = NULL;
-		}
-	}
-}
 static void slurm_get_power_cap(double **power_cap_value, char *node_name[], int number_of_node)
 {
 	debug(" LINH: START POWER CAP");
@@ -335,9 +259,7 @@ static uint32_t sum_nodes_power()
 			debug(" LINH: node name %s", node_ptr->name);
 			for(k=0;k<socket_cnt;k++){
 				
-				debug("Before assign");
-
-	//Wrong:	sum =  sum + (uint32_t)((node_ptr->power_info->current_power+k)->dram_current_watts + (node_ptr->power_info->current_power+k)->cpu_current_watts);			
+				debug("Before assign");		
 				sum = sum + powers[k].cpu_current_watts + powers[k].dram_current_watts;
 								
 				debug3("    PMON:cpu :%4d", powers[k].cpu_current_watts);
@@ -431,7 +353,6 @@ static void _do_power_monitor_work(FILE *fp)
 		}
 	}
 	fprintf(fp,"\n");
-//	fclose(fp);
 }
 
 static int _init_power_monitor_config(void){
@@ -444,11 +365,10 @@ static void *_init_power_monitor(void *arg){
 	struct tm *timenow;
 	int i = 0;
 	int j,k,l;
-	//char node_name[1024][256];
 	char *node_name[1024];	
 	int number_of_node;
 	int SOCKET_Number;
-	number_of_node = 1;
+	number_of_node = 2;
 	SOCKET_Number =2;
 	int *cap_values[2];
 	int sum;
@@ -503,21 +423,6 @@ static void *_init_power_monitor(void *arg){
 			power_cap_value[j] = malloc(sizeof *power_cap_value[j] * SOCKET_Number);
 			}
 	}
-	
-	//Wrong: for power_set_cap:
-//	int **power_cap_value3 = malloc(sizeof *power_cap_value3 * number_of_node);
-//	if (power_cap_value3) {
-//		for (j = 0; j < number_of_node; j++){
-//			power_cap_value3[j] = malloc(sizeof *power_cap_value3[j] * SOCKET_Number);
-//			}
-//	}	
-
-
-//	for (j=0; j < number_of_node; j++) {
-//		for (k = 0; k < SOCKET_Number; k++){
-//			power_cap_value3[j][k] = 11;
-//		}
-//	}	
 		
 	debug2 ("Currently, Power budget is %d", slurmctld_conf.z_32);
 	_init_power_monitor_config();
@@ -526,29 +431,26 @@ static void *_init_power_monitor(void *arg){
 		node_name[0] = "pompp00";
 //		node_name[1] = "pompp01";
 		debug(" SET _POWER__CAP");
-		cap_values[0] = 17;
-		cap_values[1] = 22;
-		//Wrong:	slurm_set_power_cap(power_cap_value3, node_name, number_of_node);
-		//OK:		slurm_set_power_cap2(cap_values, node_name, number_of_node);		
+		cap_values[0] = 50;
+		cap_values[1] = 55;
+		//Check:		slurm_set_power_cap2(cap_values, node_name, number_of_node);		
 	
 	}
-	
+	 
 	while(slurmctld_config.shutdown_time == 0){
 		sleep(slurmctld_conf.power_monitorinterval);
 
 		node_name[0] = "pompp00";
-//		node_name[1] = "pompp01";
-//		debug("POWER_CAP");
-		cap_values[0] = 17;
-		cap_values[1] = 22;
+		node_name[1] = "pompp03";
+		cap_values[0] = 50;
+		cap_values[1] = 55;
 		
 		debug("POWER_CONSUMPTION");
 		debug("Node before function call %s",node_name[0]);
-	//OK:	slurm_get_power_consumption(power_consumption_value, node_name, number_of_node);
-	//OK:	slurm_get_power_cap(power_cap_value, node_name, number_of_node);		
-		
-	//Wrong:		slurm_set_power_cap(power_cap_value3, node_name, number_of_node);
-	//OK:		slurm_set_power_cap2(cap_values, node_name, number_of_node);		
+	//Check get_power_consumption():	slurm_get_power_consumption(power_consumption_value, node_name, number_of_node);
+	//Check get_power_cap:	slurm_get_power_cap(power_cap_value, node_name, number_of_node);		
+	//Check set_power_cap:		
+		slurm_set_power_cap2(cap_values, node_name, number_of_node);		
 		
 	//Check sum function()		sum = sum_nodes_power();
 
@@ -581,7 +483,8 @@ static void *_init_power_monitor(void *arg){
 				printf("I couldn't open results.dat for writing i == 0 .\n");
 				exit(0);
 			}	
-			//Check power_monitor function:	_do_power_monitor_work(fp);
+			//Check power_monitor function:	
+			_do_power_monitor_work(fp);
 			fclose(fp);	
 		}
 		
@@ -592,7 +495,8 @@ static void *_init_power_monitor(void *arg){
 				printf("I couldn't open results.dat for writing i == 4.\n");
 				exit(0);
 			}			
-			//Check power_monitor function:	_do_power_monitor_work(fp);
+			//Check power_monitor function:	
+			_do_power_monitor_work(fp);
 			fclose(fp);	
 		}
 		else {
@@ -602,13 +506,13 @@ static void *_init_power_monitor(void *arg){
 				printf("I couldn't open results.dat for writing i = i+1.\n");
 				exit(0);
 			}	
-			//Check power_monitor function:	_do_power_monitor_work(fp);
+			//Check power_monitor function:	
+			_do_power_monitor_work(fp);
 			fclose(fp);
 		}
 	}
 	free(power_consumption_value);
 	free(power_cap_value);
-	//free(power_cap_value3);
 	
 	return ;
 
@@ -634,27 +538,6 @@ extern void start_power_monitor(pthread_t *thread_id)
 	}
 	slurm_attr_destroy(&thread_attr);
 }
-
-/*
-extern power_monitor_data_update()
-
-int _send_set_cap(
-		bitstr_t *node_bitmap,
-		node_record *node_record_table_ptr, 
-
-
-)
-int _send_set_free_cap()
-int _send_set_free_freq()
-int _send_get_current()
-int _send_get_perf()
-
-
-int _make_task_data()
-int _make_node_list()
-
-*/
-
 
 /**
  * get_remote_nodes_power - update nodes power consumption
