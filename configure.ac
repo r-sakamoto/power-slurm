@@ -584,6 +584,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/power_knob/Makefile
 		 src/plugins/power_knob/none/Makefile
 		 src/plugins/power_knob/rapl/Makefile
+		 src/plugins/power_schedule_slurmd/Makefile	
 		 src/plugins/power_schedule_slurmd/none/Makefile	
 		 src/plugins/power_schedule_slurmd/auto/Makefile			 
 		 src/plugins/preempt/Makefile
